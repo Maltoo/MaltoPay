@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MaltoStore - Top Up QRIS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --light-bg: #f4f7fb;
+      --light-card: #ffffff;
+      --light-text: #1f2937;
+      --light-border: #d1d5db;
+      --light-accent: #FFE900;
+      --header-bg: #F1C31C;
+
+      --dark-bg: #0a0f2b;
+      --dark-card: #11153b;
+      --dark-text: #d6d2ff;
+      --dark-border: #3b2d77;
+      --dark-accent: #8b5cf6;
+    }
+
+    body {
+      background-color: var(--light-bg);
+      color: var(--light-text);
+      font-family: "Inter", sans-serif;
+      transition: background-color 0.5s, color 0.5s;
+    }
+
+    body.dark {
+      background-color: var(--dark-bg);
+      color: var(--dark-text);
+    }
+
+    .card {
+      background-color: var(--light-card);
+      border: 1px solid var(--light-border);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.08);
+      transition: background-color 0.5s, border-color 0.5s, color 0.5s;
+    }
+
+    body.dark .card {
+      background-color: var(--dark-card);
+      border-color: var(--dark-border);
+    }
+
+    input, select {
+      background-color: var(--light-bg);
+      color: var(--light-text);
+      border: 1px solid var(--light-border);
+      transition: all 0.4s ease;
+    }
+
+    body.dark input,
+    body.dark select {
+      background-color: #1a1f45;
+      color: var(--dark-text);
+      border-color: var(--dark-border);
+    }
+
+    .btn-primary {
+      background-color: var(--light-accent);
+      color: white;
+      transition: 0.3s;
+    }
+
+    .btn-primary:hover {
+      background-color: #2563eb;
+    }
+
+    body.dark .btn-primary {
+      background-color: var(--dark-accent);
+      color: white;
+    }
+
+    body.dark .btn-primary:hover {
+      background-color: #7c3aed;
+    }
+
+    #themeToggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background-color: var(--light-card);
+      border: 2px solid var(--light-accent);
+      border-radius: 9999px;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 26px;
+      transition: all 0.4s ease;
+      z-index: 50;
+      color: var(--light-accent);
+    }
+
+    body.dark #themeToggle {
+      background-color: var(--dark-card);
+      border-color: var(--dark-accent);
+      color: var(--dark-accent);
+    }
+
+    #themeToggle:hover {
+      transform: rotate(15deg) scale(1.1);
+    }
+
+    .header-bar {
+      background-color: var(--header-bg);
+      transition: background-color 0.5s ease, color 0.5s ease;
+    }
+
+    body.dark .header-bar {
+      background-color: #6d28d9;
+      color: #fff;
+    }
+
+    #qrcodeContainer {
+      border: 2px solid white !important;
+    }
+
+    .success-check {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 30px auto 20px;
+      animation: pop 0.5s ease;
+    }
+
+    @keyframes pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .success-check svg {
+      width: 50px;
+      height: 50px;
+      stroke: #fff;
+      stroke-width: 4;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+<body>
+  <button id="themeToggle">🌙</button>
+
+  <!-- FORM -->
+  <div id="formPage" class="flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="card rounded-2xl p-6 w-full max-w-md">
+      <h1 class="text-3xl font-bold mb-4 text-center">🎮 MaltoStore Top Up</h1>
+      <label class="block mb-2 font-medium">Pilih Game</label>
+      <select id="gameSelect" class="w-full p-3 rounded-lg mb-4">
+        <option value="Roblox">Roblox</option>
+        <option value="Free Fire">Free Fire</option>
+        <option value="Mobile Legends">Mobile Legends</option>
+      </select>
+      <div id="inputFields"></div>
+      <button id="qrisBtn" class="btn-primary w-full py-3 rounded-lg">⚡ Generate QRIS</button>
+    </div>
+  </div>
+
+  <!-- QRIS PAGE -->
+<div id="resultPage" class="hidden min-h-screen flex flex-col">
+    <div class="flex items-center px-4 py-3 text-slate-900 dark:text-white header-bar">
+      <button id="backBtn" class="text-lg mr-2">←</button>
+      <h2 class="text-lg font-semibold">Kembali</h2>
+    </div>
+
+    <div class="flex-1 overflow-auto p-6">
+      <div class="max-w-md mx-auto">
+        <div class="card rounded-xl p-5 mb-4">
+          <p class="text-sm opacity-80">Total Bayar</p>
+          <h1 id="totalAmount" class="text-3xl font-bold">Rp0</h1>
+        </div>
+
+        <div class="card rounded-xl p-5 mb-6">
+          <h3 class="font-semibold mb-3">Detail Topup</h3>
+          <p class="flex justify-between mb-1"><span>ID Pemain</span><span id="playerIdQR"></span></p>
+          <p class="flex justify-between mb-1" id="zoneIdQR"></p>
+          <p class="flex justify-between mb-1"><span>Game</span><span id="gameName"></span></p>
+          <p class="flex justify-between mb-1"><span>Nominal</span><span id="itemName"></span></p>
+          <p class="flex justify-between mb-1"><span>Biaya Admin</span><span id="adminFeeDisplay"></span></p>
+        </div>
+
+        <div class="flex flex-col items-center text-center">
+          <div id="qrcodeContainer" class="bg-white dark:bg-[#FFFFF] p-4 rounded-lg shadow-sm mb-3">
+            <div id="qrisContainer"></div>
+          </div>
+          <p id="amountQR" class="text-lg font-semibold mb-4"></p>
+
+          <div class="w-full space-y-3">
+            <button id="downloadBtn" class="btn-primary w-full py-3 rounded-lg font-semibold">💾 Download QRIS</button>
+            <button id="waBtn" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-semibold">💬 Kirim Bukti via WhatsApp</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL PESANAN -->
+  <div id="detailPage" class="hidden flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="card rounded-2xl p-6 w-full max-w-md text-center">
+      <div class="success-check">
+        <svg viewBox="0 0 52 52"><path d="M14 27l7 7 16-16"/></svg>
+      </div>
+      <h2 class="text-2xl font-bold text-green-500 mb-4">Pembayaran Berhasil</h2>
+      <div class="text-left space-y-2">
+        <p><strong>Game:</strong> <span id="detailGame"></span></p>
+        <p><strong>ID Pemain:</strong> <span id="detailId"></span></p>
+        <p><strong>Item:</strong> <span id="detailItem"></span></p>
+        <p><strong>Total:</strong> Rp<span id="detailTotal"></span></p>
+      </div>
+      <button id="resetBtn" class="btn-primary mt-6 py-3 w-full rounded-lg">🔁 Kembali ke Halaman Awal</button>
+    </div>
+  </div>
+
+  <script>
+    // === THEME TOGGLE ===
+    const body = document.body;
+    const toggleBtn = document.getElementById("themeToggle");
+    function applyTheme(isDark) {
+      body.classList.toggle("dark", isDark);
+      toggleBtn.textContent = isDark ? "☀️" : "🌙";
+      localStorage.theme = isDark ? "dark" : "light";
+    }
+    const savedTheme = localStorage.theme === "dark";
+    applyTheme(savedTheme);
+    toggleBtn.addEventListener("click", () => applyTheme(!body.classList.contains("dark")));
+
+    // === INPUT FIELD ===
+    const nominalData = {
+      "Free Fire": [{ item: "50 Diamond", price: 8000 }, { item: "75 Diamond", price: 11000 }],
+      "Mobile Legends": [{ item: "10 Diamond", price: 4000 }, { item: "36 Diamond", price: 14000 }]
+    };
+    const inputFields = document.getElementById("inputFields");
+    const gameSelect = document.getElementById("gameSelect");
+    let selectedAmount = null, selectedItem = null, adminFee = 0;
+
+    function loadFields(game) {
+      inputFields.innerHTML = "";
+      if (game === "Roblox") {
+        inputFields.innerHTML = `
+          <label class="block mb-2 font-medium">Masukkan Username</label>
+          <input id="playerId" type="text" class="w-full p-3 rounded-lg mb-3">
+          <label class="block mb-2 font-medium">Jumlah Robux</label>
+          <input id="robuxInput" type="number" class="w-full p-3 rounded-lg mb-2">
+          <p id="robuxEstimate" class="text-sm mb-4 opacity-70">Estimasi: Rp0</p>`;
+        const robuxInput = document.getElementById("robuxInput");
+        robuxInput.addEventListener("input", () => {
+          const val = parseInt(robuxInput.value);
+          document.getElementById("robuxEstimate").textContent =
+            val > 0 ? `Estimasi: Rp${(val * 150).toLocaleString()}` : "Estimasi: Rp0";
+        });
+      } else {
+        inputFields.innerHTML = `
+          <label class="block mb-2 font-medium">Masukkan ID Pemain</label>
+          <input id="playerId" type="text" class="w-full p-3 rounded-lg mb-3">`;
+        if (game === "Mobile Legends") {
+          inputFields.innerHTML += `<label class="block mb-2 font-medium">Zone ID</label>
+            <input id="zoneId" type="text" class="w-full p-3 rounded-lg mb-3">`;
+        }
+        inputFields.innerHTML += `<div id="nominalContainer" class="grid grid-cols-2 gap-3 mb-4"></div>`;
+        const container = document.getElementById("nominalContainer");
+        nominalData[game].forEach(d => {
+          const btn = document.createElement("button");
+          btn.className = "amountBtn bg-yellow-100 dark:bg-[#2a215b] hover:bg-yellow-200 dark:hover:bg-[#3b2d77] text-[#1f2937] dark:text-[#d6d2ff] py-3 rounded-lg font-semibold";
+          btn.innerHTML = `${d.item}<br><small>Rp${d.price.toLocaleString()}</small>`;
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".amountBtn").forEach(b => b.classList.remove("ring-2", "ring-yellow-400"));
+            btn.classList.add("ring-2", "ring-yellow-400");
+            selectedAmount = d.price;
+            selectedItem = d.item;
+          });
+          container.appendChild(btn);
+        });
+      }
+    }
+
+    loadFields(gameSelect.value);
+    gameSelect.addEventListener("change", e => loadFields(e.target.value));
+
+    // === QRIS GENERATE ===
+    const baseQRIS = "00020101021126670016COM.NOBUBANK.WWW01189360050300000879140214724010134537100303UMI51440014ID.CO.QRIS.WWW0215ID20243153077910303UMI5204541153033605802ID5920WAROENGG13 OK15808366009WAY KANAN61053476162070703A016304775D";
+    function generateCRC16(str) {
+      let crc = 0xFFFF;
+      for (let i = 0; i < str.length; i++) {
+        crc ^= str.charCodeAt(i) << 8;
+        for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+        crc &= 0xFFFF;
+      }
+      return crc.toString(16).toUpperCase().padStart(4, '0');
+    }
+
+    document.getElementById("qrisBtn").addEventListener("click", () => {
+      const game = gameSelect.value;
+      const playerId = document.getElementById("playerId").value.trim();
+      if (!playerId) return alert("Isi ID Pemain!");
+      adminFee = Math.floor(Math.random() * 149) + 201;
+      let finalAmount = 0;
+
+      if (game === "Roblox") {
+        const robux = parseInt(document.getElementById("robuxInput").value);
+        if (!robux || robux <= 0) return alert("Isi jumlah Robux!");
+        finalAmount = robux * 150 + adminFee;
+        selectedItem = robux + " Robux";
+      } else {
+        if (!selectedAmount) return alert("Pilih nominal!");
+        finalAmount = selectedAmount + adminFee;
+      }
+
+      let dynamicQR = baseQRIS.replace(/6304.{4}$/, "");
+      dynamicQR += `54${finalAmount.toString().length.toString().padStart(2, '0')}${finalAmount}`;
+      dynamicQR += `6304${generateCRC16(dynamicQR + "6304")}`;
+
+      const qrContainer = document.getElementById("qrisContainer");
+      qrContainer.innerHTML = "";
+      new QRCode(qrContainer, { text: dynamicQR, width: 240, height: 240 });
+
+      document.getElementById("formPage").classList.add("hidden");
+      document.getElementById("resultPage").classList.remove("hidden");
+
+      document.getElementById("amountQR").textContent = "Rp" + finalAmount.toLocaleString();
+
+      document.getElementById("waBtn").onclick = () => {
+        const data = { game, playerId, item: selectedItem, total: finalAmount };
+        localStorage.setItem("paymentData", JSON.stringify(data));
+        const msg = `Halo MaltoStore,%0A🎮 Game: ${game}%0A🧍 ID: ${playerId}%0A💎 Nominal: ${selectedItem}%0A💰 Total: Rp${finalAmount.toLocaleString()}%0A📱 Pembayaran via QRIS`;
+        window.open(`https://wa.me/6287832947305?text=${msg}`, "_blank");
+        location.reload();
+      };
+    });
+
+    document.getElementById("backBtn").addEventListener("click", () => {
+      document.getElementById("resultPage").classList.add("hidden");
+      document.getElementById("formPage").classList.remove("hidden");
+    });
+
+    // === DETAIL PAGE ===
+    const savedPayment = JSON.parse(localStorage.getItem("paymentData") || "null");
+    if (savedPayment) {
+      document.getElementById("formPage").classList.add("hidden");
+      document.getElementById("resultPage").classList.add("hidden");
+      document.getElementById("detailPage").classList.remove("hidden");
+      document.getElementById("detailGame").textContent = savedPayment.game;
+      document.getElementById("detailId").textContent = savedPayment.playerId;
+      document.getElementById("detailItem").textContent = savedPayment.item;
+      document.getElementById("detailTotal").textContent = savedPayment.total.toLocaleString();
+    }
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      localStorage.removeItem("paymentData");
+      location.reload();
+    });
+  </script>
+</body>
+</html>
