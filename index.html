@@ -6,6 +6,7 @@
   <title>MaltoStore - Top Up QRIS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     :root {
       --light-bg: #f4f7fb;
@@ -74,6 +75,35 @@
       color: white;
     }
 
+    #themeToggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background-color: var(--light-card);
+      border: 2px solid var(--light-accent);
+      border-radius: 9999px;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 26px;
+      transition: all 0.4s ease;
+      z-index: 50;
+      color: var(--light-accent);
+    }
+
+    #themeToggle:hover {
+      transform: rotate(15deg) scale(1.1);
+    }
+
+    body.dark #themeToggle {
+      background-color: var(--dark-card);
+      border-color: var(--dark-accent);
+      color: var(--dark-accent);
+    }
+
     #qrcodeContainer {
       border: 2px solid white !important;
     }
@@ -126,7 +156,7 @@
 
   <!-- QRIS PAGE -->
   <div id="resultPage" class="hidden min-h-screen flex flex-col">
-    <div class="flex items-center px-4 py-3 text-slate-900 dark:text-white header-bar">
+    <div class="flex items-center px-4 py-3 text-slate-900 dark:text-white bg-[#F1C31C] dark:bg-[#6d28d9]">
       <button id="backBtn" class="text-lg mr-2">←</button>
       <h2 class="text-lg font-semibold">Kembali</h2>
     </div>
@@ -163,7 +193,7 @@
 
   <!-- DETAIL PAGE -->
   <div id="detailPage" class="hidden flex flex-col items-center justify-center min-h-screen p-6">
-    <div class="card rounded-2xl p-6 w-full max-w-md text-center">
+    <div id="buktiSection" class="card rounded-2xl p-6 w-full max-w-md text-center">
       <div class="success-check">
         <svg viewBox="0 0 52 52"><path d="M14 27l7 7 16-16"/></svg>
       </div>
@@ -174,7 +204,10 @@
         <p><strong>Item:</strong> <span id="detailItem"></span></p>
         <p><strong>Total:</strong> Rp<span id="detailTotal"></span></p>
       </div>
-      <button id="resetBtn" class="btn-primary mt-6 py-3 w-full rounded-lg">🔁 Kembali ke Halaman Awal</button>
+      <div class="space-y-3 mt-6">
+        <button id="saveProofBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold">💾 Simpan Bukti (PNG)</button>
+        <button id="resetBtn" class="btn-primary py-3 w-full rounded-lg">🔁 Kembali ke Halaman Awal</button>
+      </div>
     </div>
   </div>
 
@@ -268,7 +301,7 @@
         finalAmount = selectedAmount + adminFee;
       }
 
-      // 🧾 Update detail transaksi
+      // update info
       document.getElementById("gameName").textContent = game;
       document.getElementById("playerIdQR").textContent = playerId;
       document.getElementById("itemName").textContent = selectedItem;
@@ -276,7 +309,7 @@
       document.getElementById("totalAmount").textContent = "Rp" + finalAmount.toLocaleString();
       document.getElementById("amountQR").textContent = "Rp" + finalAmount.toLocaleString();
 
-      // 🔢 Generate QRIS
+      // generate qris
       let dynamicQR = baseQRIS.replace(/6304.{4}$/, "");
       dynamicQR += `54${finalAmount.toString().length.toString().padStart(2, '0')}${finalAmount}`;
       dynamicQR += `6304${generateCRC16(dynamicQR + "6304")}`;
@@ -288,7 +321,7 @@
       document.getElementById("formPage").classList.add("hidden");
       document.getElementById("resultPage").classList.remove("hidden");
 
-      // 🟢 WhatsApp
+      // WhatsApp
       document.getElementById("waBtn").onclick = () => {
         const data = { game, playerId, item: selectedItem, total: finalAmount };
         localStorage.setItem("paymentData", JSON.stringify(data));
@@ -315,9 +348,19 @@
       document.getElementById("detailTotal").textContent = savedPayment.total.toLocaleString();
     }
 
+    // === SAVE BUKTI ===
+    document.getElementById("saveProofBtn").addEventListener("click", () => {
+      html2canvas(document.getElementById("buktiSection")).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "Bukti_Pembayaran_MaltoStore.png";
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    });
+
     document.getElementById("resetBtn").addEventListener("click", () => {
       localStorage.removeItem("paymentData");
-      location.reload();
+location.reload();
     });
   </script>
 </body>
