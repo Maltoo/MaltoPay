@@ -53,8 +53,7 @@
       transition: all 0.4s ease;
     }
 
-    body.dark input,
-    body.dark select {
+    body.dark input, body.dark select {
       background-color: #1a1f45;
       color: var(--dark-text);
       border-color: var(--dark-border);
@@ -73,49 +72,6 @@
     body.dark .btn-primary {
       background-color: var(--dark-accent);
       color: white;
-    }
-
-    body.dark .btn-primary:hover {
-      background-color: #7c3aed;
-    }
-
-    #themeToggle {
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      background-color: var(--light-card);
-      border: 2px solid var(--light-accent);
-      border-radius: 9999px;
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 26px;
-      transition: all 0.4s ease;
-      z-index: 50;
-      color: var(--light-accent);
-    }
-
-    body.dark #themeToggle {
-      background-color: var(--dark-card);
-      border-color: var(--dark-accent);
-      color: var(--dark-accent);
-    }
-
-    #themeToggle:hover {
-      transform: rotate(15deg) scale(1.1);
-    }
-
-    .header-bar {
-      background-color: var(--header-bg);
-      transition: background-color 0.5s ease, color 0.5s ease;
-    }
-
-    body.dark .header-bar {
-      background-color: #6d28d9;
-      color: #fff;
     }
 
     #qrcodeContainer {
@@ -169,7 +125,7 @@
   </div>
 
   <!-- QRIS PAGE -->
-<div id="resultPage" class="hidden min-h-screen flex flex-col">
+  <div id="resultPage" class="hidden min-h-screen flex flex-col">
     <div class="flex items-center px-4 py-3 text-slate-900 dark:text-white header-bar">
       <button id="backBtn" class="text-lg mr-2">←</button>
       <h2 class="text-lg font-semibold">Kembali</h2>
@@ -185,14 +141,13 @@
         <div class="card rounded-xl p-5 mb-6">
           <h3 class="font-semibold mb-3">Detail Topup</h3>
           <p class="flex justify-between mb-1"><span>ID Pemain</span><span id="playerIdQR"></span></p>
-          <p class="flex justify-between mb-1" id="zoneIdQR"></p>
           <p class="flex justify-between mb-1"><span>Game</span><span id="gameName"></span></p>
           <p class="flex justify-between mb-1"><span>Nominal</span><span id="itemName"></span></p>
           <p class="flex justify-between mb-1"><span>Biaya Admin</span><span id="adminFeeDisplay"></span></p>
         </div>
 
         <div class="flex flex-col items-center text-center">
-          <div id="qrcodeContainer" class="bg-white dark:bg-[#FFFFF] p-4 rounded-lg shadow-sm mb-3">
+          <div id="qrcodeContainer" class="bg-white p-4 rounded-lg shadow-sm mb-3">
             <div id="qrisContainer"></div>
           </div>
           <p id="amountQR" class="text-lg font-semibold mb-4"></p>
@@ -206,7 +161,7 @@
     </div>
   </div>
 
-  <!-- DETAIL PESANAN -->
+  <!-- DETAIL PAGE -->
   <div id="detailPage" class="hidden flex flex-col items-center justify-center min-h-screen p-6">
     <div class="card rounded-2xl p-6 w-full max-w-md text-center">
       <div class="success-check">
@@ -264,10 +219,6 @@
         inputFields.innerHTML = `
           <label class="block mb-2 font-medium">Masukkan ID Pemain</label>
           <input id="playerId" type="text" class="w-full p-3 rounded-lg mb-3">`;
-        if (game === "Mobile Legends") {
-          inputFields.innerHTML += `<label class="block mb-2 font-medium">Zone ID</label>
-            <input id="zoneId" type="text" class="w-full p-3 rounded-lg mb-3">`;
-        }
         inputFields.innerHTML += `<div id="nominalContainer" class="grid grid-cols-2 gap-3 mb-4"></div>`;
         const container = document.getElementById("nominalContainer");
         nominalData[game].forEach(d => {
@@ -317,6 +268,15 @@
         finalAmount = selectedAmount + adminFee;
       }
 
+      // 🧾 Update detail transaksi
+      document.getElementById("gameName").textContent = game;
+      document.getElementById("playerIdQR").textContent = playerId;
+      document.getElementById("itemName").textContent = selectedItem;
+      document.getElementById("adminFeeDisplay").textContent = "Rp" + adminFee.toLocaleString();
+      document.getElementById("totalAmount").textContent = "Rp" + finalAmount.toLocaleString();
+      document.getElementById("amountQR").textContent = "Rp" + finalAmount.toLocaleString();
+
+      // 🔢 Generate QRIS
       let dynamicQR = baseQRIS.replace(/6304.{4}$/, "");
       dynamicQR += `54${finalAmount.toString().length.toString().padStart(2, '0')}${finalAmount}`;
       dynamicQR += `6304${generateCRC16(dynamicQR + "6304")}`;
@@ -328,8 +288,7 @@
       document.getElementById("formPage").classList.add("hidden");
       document.getElementById("resultPage").classList.remove("hidden");
 
-      document.getElementById("amountQR").textContent = "Rp" + finalAmount.toLocaleString();
-
+      // 🟢 WhatsApp
       document.getElementById("waBtn").onclick = () => {
         const data = { game, playerId, item: selectedItem, total: finalAmount };
         localStorage.setItem("paymentData", JSON.stringify(data));
